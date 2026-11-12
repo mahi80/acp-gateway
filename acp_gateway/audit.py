@@ -131,7 +131,9 @@ class DashboardLink:
 
     def _register(self, name: str) -> str | None:
         c = self._clients[name]
-        payload = {"agent_code": None, "name": c.name, "bu": c.business_unit or "default", "framework": "acp-gateway",
+        # no "agent_code": the dashboard reads a null as the literal code "NONE", and every client would then
+        # collapse into one agent row
+        payload = {"name": c.name, "bu": c.business_unit or "default", "framework": "acp-gateway",
                    "endpoint": "", "process_name": "ACP gateway", "process_type": "gateway",
                    "license_key": os.environ.get("ACP_LICENSE_KEY", ""),
                    "governance_config": {"gateway": {"mode": c.mode, "fail": c.fail, "upstream": c.upstream}}}

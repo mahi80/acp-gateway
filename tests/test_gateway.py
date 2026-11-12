@@ -323,11 +323,12 @@ def test_audit_file_is_private_and_the_chain_continues_after_a_restart(make, ups
 
 class FakeDashboard:
     def __init__(self):
-        self.calls, self.paused, self.audit, self.fail_audit = [], set(), [], False
+        self.calls, self.paused, self.audit, self.fail_audit, self.registered = [], set(), [], False, []
 
     def __call__(self, method, url, body, headers, timeout):
         self.calls.append((method, url, headers.get("X-API-Key")))
         if url.endswith("/api/agents/register"):
+            self.registered.append(body)
             return 200, {"agent_id": "agent_" + body["name"]}
         if url.endswith("/heartbeat"):
             name = url.split("/api/agents/agent_")[1].split("/")[0]
@@ -419,3 +420,15 @@ def test_observe_records_but_does_not_enforce_rate_limit_or_model_allowlist(make
         assert codes == [200] * 4 and len(upstream.requests) == 4
         kinds = {f["kind"] for row in audit_rows(c) for f in row["findings"]}
         assert {"MODEL_NOT_ALLOWED", "RATE_LIMITED"} <= kinds
+
+
+def test_each_client_registers_as_its_own_agent_with_no_agent_code(make, upstream):
+    # A real ACP dashboard reads a null agent_code as the literal code "NONE"; two clients then became one agent.
+    dash = FakeDashboard()
+    app = make(env={"ACP_DASHBOARD_URL": "https://acp.test", "ACP_API_KEY": "dash-key"}, dashboard_transport=dash)
+    with TestClient(app):
+        app.state.link.tick()
+    assert len(dash.registered) == 4 and len({b["name"] for b in dash.registered}) == 4
+    assert all("agent_code" not in b for b in dash.registered)
+    assert {b["framework"] for b in dash.registered} == {"acp-gateway"}
+    assert next(b for b in dash.registered if b["name"] == "red-agent")["bu"] == "lending"
