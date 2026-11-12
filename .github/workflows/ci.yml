@@ -1,0 +1,29 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: { python: ["3.11", "3.12", "3.13"] }
+    env:
+      GH_READ_TOKEN: ${{ secrets.GH_READ_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "${{ matrix.python }}" }
+      - name: Need the SDK read token
+        if: ${{ env.GH_READ_TOKEN == '' }}
+        run: |
+          echo "::error title=GH_READ_TOKEN missing::Add a repository secret GH_READ_TOKEN that can read mahi80/rbi (the gateway's controls come from acp-sdk)."
+          exit 1
+      - name: Install
+        run: |
+          pip install "fastapi>=0.115,<1.0" "uvicorn>=0.30,<1.0" "httpx>=0.27,<1.0" "pyyaml>=6.0" "pytest>=8"
+          pip install "acp-sdk @ git+https://x-access-token:${GH_READ_TOKEN}@github.com/mahi80/rbi.git@b2e9d97#subdirectory=acp-sdk"
+          pip install --no-deps -e .
+      - name: Tests
+        run: python -m pytest tests -q

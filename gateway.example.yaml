@@ -1,0 +1,31 @@
+# ACP gateway configuration. Secrets are never written here: name the environment variable that holds them.
+upstreams:
+  openai:
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    external: true                 # data leaves the organisation
+  local-vllm:
+    base_url: http://vllm.internal:8000/v1
+    external: false
+
+clients:
+  - name: loan-assistant           # the agent's name in audit rows and on the ACP dashboard
+    key_env: GW_KEY_LOAN           # create one with: python -m acp_gateway new-key
+    business_unit: lending
+    upstream: openai
+    mode: observe                  # observe | redact | block  — start in observe
+    fail: open                     # open | closed
+    rate_limit_per_min: 120
+    models: [gpt-4o-mini]
+    max_classification: INTERNAL   # highest data level this client may send to an external upstream
+    tools:
+      deny: [transfer_funds, delete_account]
+      require_approval: [execute_sql]
+
+  - name: internal-copilot
+    key_env: GW_KEY_COPILOT
+    upstream: local-vllm
+    mode: redact
+
+audit_path: /var/lib/acp-gateway/audit.jsonl
+max_body_bytes: 2097152
