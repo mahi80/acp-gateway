@@ -13,8 +13,8 @@ dependencies = [
     "uvicorn>=0.30,<1.0",
     "httpx>=0.27,<1.0",
     "pyyaml>=6.0",
-    # The controls come from the ACP SDK. Private; pinned to mahi80/rbi @ b2e9d97 (acp-sdk 0.8.3).
-    "acp-sdk @ git+https://github.com/mahi80/rbi.git@b2e9d97#subdirectory=acp-sdk",
+    # The controls come from the ACP SDK. Private; pinned to mahi80/rbi @ 696b369 (acp-sdk 0.8.5).
+    "acp-sdk @ git+https://github.com/mahi80/rbi.git@696b369#subdirectory=acp-sdk",
 ]
 
 [project.optional-dependencies]

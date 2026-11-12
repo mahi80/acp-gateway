@@ -103,8 +103,6 @@ rows queue (bounded) while the local file keeps everything.
 - Rate limits and the pause state are per process. Run one replica, or expect limits to be per replica, until
   shared state (Redis) is added.
 - `require_approval` tools are held back like denied ones: there is no approval round-trip yet.
-- The SDK's e-mail pattern is slow on adversarial text; the gateway swaps in a linear one. The SDK itself
-  should be fixed.
 
 ## Tests
 
