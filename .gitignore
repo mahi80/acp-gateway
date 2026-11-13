@@ -6,3 +6,6 @@ __pycache__/
 audit.jsonl
 *.local.yaml
 .env
+
+# graphify code graph (rebuilt locally, never committed)
+graphify-out/
