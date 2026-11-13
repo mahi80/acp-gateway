@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import copy
 import logging
-import re
 import threading
 from dataclasses import dataclass, field
 from typing import Any
@@ -82,19 +81,6 @@ def _parts(msg: dict) -> list[tuple[Any, Any]]:
     return out
 
 
-#: The SDK's e-mail pattern (``[a-zA-Z0-9._%+-]+@...``) retries from every position inside a long run of
-#: address characters, so 32 KB of "a.a.a." costs seconds. The gateway scans text an attacker chose, so it swaps
-#: in an equivalent pattern that can only start at the beginning of a token and has bounded parts.
-_EMAIL_LINEAR = re.compile(r"(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]{1,63}(?:\.[A-Za-z0-9-]{1,63}){0,8}\.[A-Za-z]{2,24}\b")
-
-
-def _harden(scanner: PIIScanner) -> PIIScanner:
-    for entry in getattr(scanner, "_compiled", []) or []:
-        if isinstance(entry, dict) and entry.get("name") == "EMAIL":
-            entry["_re"] = _EMAIL_LINEAR
-    return scanner
-
-
 class Engine:
     """One per gateway process. Thread-safe: the controls are read-only after construction except the rate
     limiter and the paused set, which are guarded here."""
@@ -102,7 +88,7 @@ class Engine:
     def __init__(self, settings: Settings):
         self.settings = settings
         self._fw = InjectionFirewall(block_on_detection=False)
-        self._pii = _harden(PIIScanner(mode="log"))
+        self._pii = PIIScanner(mode="log")
         self._conf = ConfidentialityClassifier()
         self._tools = ToolPermissionMatrix(
             policies={c.name: {"allow": list(c.tools_allow), "deny": list(c.tools_deny),
